@@ -1,0 +1,13 @@
+_target_: src.envs.mujoco.Ant.AntRandomEnvClassMixVersion
+
+VERBOSE: false
+name: Ant with random box and leg
+xml_path: xml/ant_box_leg.xml
+frame_skip: 5
+rand_mass_box: [1, 2]
+rand_mass_leg: [1, 2]
+rand_fric: [0.3, 0.8]
+render_mode: human
+render_w: 1500
+render_h: 1000
+render_res: 200

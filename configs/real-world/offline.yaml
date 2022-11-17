@@ -1,0 +1,2 @@
+mode: offline
+data_dir: ${paths.data_dir}

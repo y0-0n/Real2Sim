@@ -1,0 +1,6 @@
+_target_: src.datamodules.SoRoSim_datamodule.SoRoSimDataModule
+data_dir: ${paths.data_dir}
+batch_size: 128
+train_val_test_split: [18_000, 2_000, 3_000]
+num_workers: 0
+pin_memory: False

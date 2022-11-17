@@ -1,0 +1,3 @@
+_target_: src.models.BO_module.BOLitModule
+
+n_workers: 1
