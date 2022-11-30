@@ -1,0 +1,110 @@
+<mujoco model="canine">
+    <compiler angle="radian" meshdir="meshes/" />
+    <size njmax="500" nconmax="100" />
+    <asset>
+        <mesh name="base" file="base2.STL" />
+        <mesh name="L_L_calf" file="L_L_calf.STL" />
+        <mesh name="L_L_hip" file="L_L_hip.STL" />
+        <mesh name="L_L_thigh" file="L_L_thigh.STL" />
+        <mesh name="L_U_calf" file="L_U_calf.STL" />
+        <mesh name="L_U_hip" file="L_U_hip.STL" />
+        <mesh name="L_U_thigh" file="L_U_thigh.STL" />
+        <mesh name="R_L_calf" file="R_L_calf.STL" />
+        <mesh name="R_L_hip" file="R_L_hip.STL" />
+        <mesh name="R_L_thigh" file="R_L_thigh.STL" />
+        <mesh name="R_U_calf" file="R_U_calf.STL" />
+        <mesh name="R_U_hip" file="R_U_hip.STL" />
+        <mesh name="R_U_thigh" file="R_U_thigh.STL" />
+        <texture name="groundplane" type="2d" builtin="checker" rgb1=".25 .26 .25"
+            rgb2=".22 .22 .22" width="100" height="100" mark="none" markrgb=".8 .8 .8"/>
+        <material name="MatGnd" texture="groundplane"  texrepeat="20 20" specular="1" shininess=".3" reflectance="0.00001" rgba="1 1 1 1"/>
+    </asset>
+
+    <worldbody>
+        <light directional="true" cutoff="60" exponent="1" diffuse="1 1 1" specular=".1 .1 .1" pos="1 1 1.5" dir="-1 -1 -1.3"/>
+        <geom name="ground" type="plane" pos="0 0 0" size="10 10 1" conaffinity="1" contype="1" material="MatGnd"/>
+
+        <body name="base" quat="0 0 -0.7071081 0.7071055" pos="0.13012 0 1">
+            <joint type="free"/>
+            <geom type="box" rgba="1 0 0 0.4" size="0.001 0.001 0.001" />
+            <body name="trunk" quat="0 0 -0.7071081 0.7071055" pos="0.13012 0 0">
+                <inertial pos="0.00071514 -0.050885 0.13012" quat="0.706705 0.00318092 -0.00372784 0.707492" mass="2.7533" diaginertia="0.00743681 0.0057332 0.00422639" />
+                <!-- <joint name="floating_base" pos="0 0 0" axis="1 0 0" /> -->
+                <!-- <geom size="0.25 0.125 0.05" type="box" rgba="0.79216 0.81961 0.93333 1" /> -->
+                <geom type="mesh" mesh="base" />
+                <body name="RF_hip" pos="0.055 0.029 -0.0555" quat="0.00572489 -0.707082 -0.707085 0.00572492">
+                    <inertial pos="0.059164 0.012038 -0.00019541" quat="0.705401 -0.00572511 0.00575238 0.708762" mass="0.32374" diaginertia="0.000342238 0.000228867 0.000170555" />
+                    <joint name="RF_HIP" pos="0 0 0" axis="1 0 0" />
+                    <!-- <geom size="0.046 0.02" type="cylinder" rgba="0.79216 0.81961 0.93333 1" /> -->
+                    <geom type="mesh" mesh="R_U_hip" />
+                    <body name="RF_thigh" pos="0.0705 0.030496 -0.00049506" quat="0.00732132 0.904306 0.00347263 0.426807">
+                        <inertial pos="-0.016682 -0.053867 -0.03127" quat="0.693059 0.164678 0.161392 0.683011" mass="0.66261" diaginertia="0.00204035 0.00175663 0.000379579" />
+                        <joint name="RF_THIGH" pos="0 0 0" axis="0 1 0" />
+                        <!-- <geom size="0.046 0.1" type="cylinder" rgba="0.79216 0.81961 0.93333 1" /> -->
+                        <geom type="mesh" mesh="R_U_thigh" />
+                        <body name="RF_calf" pos="-0.097329 -0.0635 -0.20806" quat="0.89182 0 -0.452391 0">
+                            <inertial pos="0.0903995 -0.013401 -0.0815546" quat="0.278046 0.669154 0.62918 0.28117" mass="0.0797775" diaginertia="0.000252014 0.000249466 5.58877e-06" />
+                            <joint name="RF_KNEE" pos="0 0 0" axis="0 1 0" />
+                            <!-- <geom size="0.046 0.1" type="cylinder" rgba="0.792157 0.819608 0.933333 1" /> -->
+                            <geom type="mesh" mesh="R_U_calf" />
+                        </body>
+                    </body>
+                </body>
+                <body name="LF_hip" pos="-0.055 0.029 -0.0555" quat="0.00572489 0.707082 0.707085 0.00572492">
+                    <inertial pos="0.0591641 -0.0120378 -0.000195419" quat="0.708762 0.00575251 -0.00572524 0.705401" mass="0.323739" diaginertia="0.000342239 0.000228864 0.000170557" />
+                    <joint name="LF_HIP" pos="0 0 0" axis="1 0 0" />
+                    <!-- <geom size="0.046 0.02" type="cylinder" rgba="0.792157 0.819608 0.933333 1" /> -->
+                    <geom type="mesh" mesh="L_U_hip" />
+                    <body name="LF_thigh" pos="0.0705 -0.030496 -0.00049506" quat="0.00769876 -0.950382 0.00252863 -0.310979">
+                        <inertial pos="-0.0238019 0.0538603 -0.0268298" quat="0.658974 0.241951 0.244096 0.669052" mass="0.66246" diaginertia="0.00204026 0.00175652 0.000379607" />
+                        <joint name="LF_THIGH" pos="0 0 0" axis="0 1 0" />
+                        <!-- <geom size="0.046 0.1" type="cylinder" rgba="0.792157 0.819608 0.933333 1" /> -->
+                        <geom type="mesh" mesh="L_U_thigh" />
+                        <body name="LF_calf" pos="-0.14351 0.0635 -0.17974" quat="0.930724 0 -0.365723 0">
+                            <inertial pos="0.0851281 0.0135784 -0.0851105" quat="0.637969 -0.263033 -0.26267 0.674399" mass="0.0805315" diaginertia="0.000252046 0.000249484 5.60198e-06" />
+                            <joint name="LF_KNEE" pos="0 0 0" axis="0 1 0" />
+                            <!-- <geom size="0.046 0.1" type="cylinder" rgba="0.792157 0.819608 0.933333 1" /> -->
+                            <geom type="mesh" mesh="L_U_calf" />
+                        </body>
+                    </body>
+                </body>
+                <body name="RH_hip" pos="0.055 -0.321 -0.0555" quat="0.0336782 -0.706303 0.706306 -0.0336784">
+                    <inertial pos="0.059164 -0.011985 0.0011458" quat="0.70798 -0.0337667 0.0336065 0.704623" mass="0.32374" diaginertia="0.000342238 0.000228867 0.000170555" />
+                    <joint name="RH_HIP" pos="0 0 0" axis="1 0 0" />
+                    <!-- <geom size="0.046 0.02" type="cylinder" rgba="0.79216 0.81961 0.93333 1" /> -->
+                    <geom type="mesh" mesh="R_L_hip" />
+                    <body name="RH_thigh" pos="0.0705 -0.030362 0.0029028" quat="0.407262 -0.0194301 -0.912068 0.0435105">
+                        <inertial pos="-0.016682 -0.053867 -0.03127" quat="0.693059 0.164678 0.161392 0.683011" mass="0.66261" diaginertia="0.00204035 0.00175663 0.000379579" />
+                        <joint name="RH_THIGH" pos="0 0 0" axis="0 1 0" />
+                        <!-- <geom size="0.046 0.1" type="cylinder" rgba="0.79216 0.81961 0.93333 1" /> -->
+                        <geom type="mesh" mesh="R_L_thigh" />
+                        <body name="RH_calf" pos="-0.097329 -0.0635 -0.20806" quat="0.908592 0 -0.417684 0">
+                            <inertial pos="0.0904 -0.013401 -0.081555" quat="0.278018 0.66922 0.629107 0.281202" mass="0.079778" diaginertia="0.00025201 0.000249472 5.58797e-06" />
+                            <joint name="RH_KNEE" pos="0 0 0" axis="0 1 0" />
+                            <!-- <geom size="0.046 0.1" pos="0 0 -0.1" type="cylinder" rgba="0.79216 0.81961 0.93333 1" /> -->
+                            <geom type="mesh" mesh="R_L_calf" />
+                        </body>
+                    </body>
+                </body>
+                <body name="LH_hip" pos="-0.055 -0.321 -0.0555" quat="0.707082 -0.00573881 0.00573883 -0.707085">
+                    <inertial pos="0.0591641 -0.0120378 -0.00019542" quat="0.708762 0.00575251 -0.00572524 0.705401" mass="0.323739" diaginertia="0.000342239 0.000228864 0.000170557" />
+                    <joint name="LH_HIP" pos="0 0 0" axis="1 0 0" />
+                    <!-- <geom size="0.046 0.02" type="cylinder" rgba="0.792157 0.819608 0.933333 1" /> -->
+                    <geom type="mesh" mesh="L_L_hip" />
+                    <body name="LH_thigh" pos="0.0705 -0.030496 -0.00049506" quat="0.00239868 -0.295152 -0.00775323 0.955416">
+                        <inertial pos="-0.0238019 0.0538603 -0.0268298" quat="0.658974 0.241951 0.244096 0.669052" mass="0.66246" diaginertia="0.00204026 0.00175652 0.000379607" />
+                        <joint name="LH_THIGH" pos="0 0 0" axis="0 1 0" />
+                        <!-- <geom size="0.046 0.1" type="cylinder" rgba="0.792157 0.819608 0.933333 1" /> -->
+                        <geom type="mesh" mesh="L_L_thigh" />
+                        <body name="LH_calf" pos="-0.14351 0.0635 -0.17974" quat="0.94286 0 -0.33319 0">
+                            <inertial pos="0.0851281 0.0135784 -0.0851105" quat="0.637969 -0.263033 -0.26267 0.674399" mass="0.0805315" diaginertia="0.000252046 0.000249484 5.60198e-06" />
+                            <joint name="LH_KNEE" pos="0 0 0" axis="0 1 0" />
+                            <!-- <geom size="0.046 0.1" pos="0 0 -0.1" type="cylinder" rgba="0.792157 0.819608 0.933333 1" /> -->
+                            <geom type="mesh" mesh="L_L_calf" />
+                        </body>
+                    </body>
+                </body>
+            </body>
+        </body>
+    </worldbody>
+</mujoco>
