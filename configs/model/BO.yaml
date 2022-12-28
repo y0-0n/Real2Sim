@@ -1,3 +1,4 @@
-_target_: src.models.BO_module.BOLitModule
+_target_: src.models.BO_module.BOModule
 
+environment: ${environment}
 n_workers: 1

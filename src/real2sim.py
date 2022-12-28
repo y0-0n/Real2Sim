@@ -29,11 +29,15 @@ def train(cfg: DictConfig) -> None:#Tuple[dict, dict]:
     ######################################
     datamodule = hydra.utils.instantiate(cfg.datamodule)
 
-    trainer: Trainer = hydra.utils.instantiate(cfg.trainer)
+    ######################################
+    # train
+    ######################################
+    
+    # trainer: Trainer = hydra.utils.instantiate(cfg.trainer)
 
-    trainer.fit(model=model, datamodule=datamodule, ckpt_path=cfg.get("ckpt_path"))
+    # trainer.fit(model=model, ckpt_path=cfg.get("ckpt_path"))
 
-    logging.info('Test')
+    logging.info('Finish')
 
 @hydra.main(version_base=None, config_path=root / "configs", config_name="real2sim")
 def main(cfg : DictConfig) -> None:

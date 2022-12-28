@@ -8,6 +8,8 @@ root = pyrootutils.setup_root(
 )
 
 from typing import Any, List
+# import sys
+# print(sys.path)
 
 import torch
 from pytorch_lightning import LightningModule
@@ -21,17 +23,62 @@ import logging
 import hydra
 from omegaconf import DictConfig, OmegaConf
 from collections import deque
+from torch.utils.data import DataLoader
+from src.utils.ReplayBuffer import ReplayBuffer
+from src.envs.mujoco.Ant import AntRandomEnvClass
 
 @ray.remote
-class BOWorker(object):
+class Worker(object):
     def __init__(self,
+                env,
                 x_minmax=np.array([[0, 1]]),
                 worker_id=0) -> None:
         self.x_minmax = x_minmax # shape (num_parameter, 2)
         self.worker_id = worker_id
 
+        self.env = env(VERBOSE=False, rand_mass=[1,2],rand_fric=[0.3, 0.8],render_mode=None)       
+
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
+
+    def simulate(self, x):
+        # self.logger.warning(self.worker_id)
+        env = self.env
+        for i in range(300):
+            env.render()
+            if i % 100 == 0:
+                env.reset()
+                env.reset_random()
+                # env.set_box_weight(1)
+                # env.set_leg_weight(1)
+                # env.set_fric(0.2)
+                # env.set_box_weight(1)
+                # print(env.get_fric(), env.get_box_weight(), env.get_leg_weight())
+            action = np.random.standard_normal(8) * 0.7
+            env.step(action)
+class BOModule(object):
+    def __init__(
+        self,
+        env,
+        n_workers:int=2,
+        batch_size:int=5,
+        x_minmax:np.array=np.array([[1e3,1e5]]),
+        n_sample_max:int=1000
+    ):
+        super().__init__()
+
+        ######################################
+        # environment
+        ######################################
+        # env = hydra.utils.instantiate(environment)
+        self.x_data = deque()
+        self.y_data = deque()
+        self.batch_size = batch_size
+        self.x_minmax = x_minmax
+        self.n_workers = n_workers
+        # print(environment)
+        # self.envs = [hydra.utils.instantiate(cfg.environment) for i in range(self.n_workers)]
+        self.workers = [Worker.remote(env=env, worker_id=i) for i in range(n_workers)]
 
     def sample(self,n_sample):
         """
@@ -43,147 +90,15 @@ class BOWorker(object):
                 self.x_minmax[:,0]+(self.x_minmax[:,1]-self.x_minmax[:,0])*np.random.rand(1,self.x_minmax.shape[0]))
         return x_samples
 
-    def simulate(self):
-        self.logger.warn(self.worker_id)
-
-class BOLitModule(LightningModule):
-    """Example of LightningModule for MNIST classification.
-
-    A LightningModule organizes your PyTorch code into 6 sections:
-        - Computations (init)
-        - Train loop (training_step)
-        - Validation loop (validation_step)
-        - Test loop (test_step)
-        - Prediction Loop (predict_step)
-        - Optimizers and LR Schedulers (configure_optimizers)
-
-    Docs:
-        https://pytorch-lightning.readthedocs.io/en/latest/common/lightning_module.html
-    """
-    def __init__(
-        self,
-        n_workers:int
-    ):
-        super().__init__()
-
-        # this line allows to access init params with 'self.hparams' attribute
-        # also ensures init params will be stored in ckpt
-        self.save_hyperparameters(logger=False)
-
-        ######################################
-        # environment
-        ######################################
-        # env = hydra.utils.instantiate(cfg.environment)
-
-        self.x_data = deque()
-        self.y_data = deque()
-
-        self.workers = [BOWorker.remote(worker_id=i) for i in range(self.hparams.n_workers)]
-
-        # metric objects for calculating and averaging accuracy across batches
-        self.train_acc = Accuracy()
-        self.val_acc = Accuracy()
-        self.test_acc = Accuracy()
-
-        # for averaging loss across batches
-        self.train_loss = MeanMetric()
-        self.val_loss = MeanMetric()
-        self.test_loss = MeanMetric()
-
-        # for tracking best so far validation accuracy
-        self.val_acc_best = MaxMetric()
-
-    def forward(self, x: torch.Tensor):
-        print('forward')
-        #return self.net(x)
-
-    def on_train_start(self):
-        # by default lightning executes validation step sanity checks before training starts,
-        # so we need to make sure val_acc_best doesn't store accuracy from these checks
-        self.val_acc_best.reset()
-
-    def step(self, batch: Any):
-        x, y = batch
-        logits = self.forward(x)
-        # print(x)
-        # loss = self.criterion(logits, y)
-        # preds = torch.argmax(logits, dim=1)
-        print('step')
-        #return loss, preds, y
-
-    def training_step(self, batch: Any, batch_idx: int):
-        # loss, preds, targets = self.step(batch)
-        print("training_step")
-        self.step(batch)
-
-        # update and log metrics
-        # self.train_loss(loss)
-        # self.train_acc(preds, targets)
-        # self.log("train/loss", self.train_loss, on_step=False, on_epoch=True, prog_bar=True)
-        # self.log("train/acc", self.train_acc, on_step=False, on_epoch=True, prog_bar=True)
-
-        # we can return here dict with any tensors
-        # and then read it in some callback or in `training_epoch_end()` below
-        # remember to always return loss from `training_step()` or backpropagation will fail!
-        #return {"loss": loss, "preds": preds, "targets": targets}
-
-    def training_epoch_end(self, outputs: List[Any]):
-        # `outputs` is a list of dicts returned from `training_step()`
-        pass
-
-    def validation_step(self, batch: Any, batch_idx: int):
-        loss, preds, targets = self.step(batch)
-
-        # update and log metrics
-        self.val_loss(loss)
-        self.val_acc(preds, targets)
-        self.log("val/loss", self.val_loss, on_step=False, on_epoch=True, prog_bar=True)
-        self.log("val/acc", self.val_acc, on_step=False, on_epoch=True, prog_bar=True)
-
-        return {"loss": loss, "preds": preds, "targets": targets}
-
-    def validation_epoch_end(self, outputs: List[Any]):
-        acc = self.val_acc.compute()  # get current val acc
-        self.val_acc_best(acc)  # update best so far val acc
-        # log `val_acc_best` as a value through `.compute()` method, instead of as a metric object
-        # otherwise metric would be reset by lightning after each epoch
-        self.log("val/acc_best", self.val_acc_best.compute(), prog_bar=True)
-
-    def test_step(self, batch: Any, batch_idx: int):
-        loss, preds, targets = self.step(batch)
-
-        # update and log metrics
-        self.test_loss(loss)
-        self.test_acc(preds, targets)
-        self.log("test/loss", self.test_loss, on_step=False, on_epoch=True, prog_bar=True)
-        self.log("test/acc", self.test_acc, on_step=False, on_epoch=True, prog_bar=True)
-
-        return {"loss": loss, "preds": preds, "targets": targets}
-
-    def test_epoch_end(self, outputs: List[Any]):
-        pass
-
-    def configure_optimizers(self):
-        """Choose what optimizers and learning-rate schedulers to use in your optimization.
-        Normally you'd need one. But in the case of GANs or similar you might have multiple.
-
-        Examples:
-            https://pytorch-lightning.readthedocs.io/en/latest/common/lightning_module.html#configure-optimizers
+    def evaluation(self):
         """
-        return None
-        # optimizer = self.hparams.optimizer(params=self.parameters())
-        # if self.hparams.scheduler is not None:
-        #     scheduler = self.hparams.scheduler(optimizer=optimizer)
-        #     return {
-        #         "optimizer": optimizer,
-        #         "lr_scheduler": {
-        #             "scheduler": scheduler,
-        #             "monitor": "val/loss",
-        #             "interval": "epoch",
-        #             "frequency": 1,
-        #         },
-        #     }
-        # return {"optimizer": optimizer}
+        """
+        # print(self.sample(5))
+        x_evals = self.sample(self.n_workers)
+        evals = [self.workers[i].simulate.remote(x=x_eval) for i, x_eval in enumerate(x_evals)]
+        trajs = ray.get(evals)
+        print(trajs)
+
 
 
 if __name__ == "__main__":
@@ -192,8 +107,10 @@ if __name__ == "__main__":
     import pyrootutils
 
     root = pyrootutils.setup_root(__file__, pythonpath=True)
-    cfg = omegaconf.OmegaConf.load(root / "configs" / "model" / "mnist.yaml")
-    _ = hydra.utils.instantiate(cfg)
+    # cfg = omegaconf.OmegaConf.load(root / "configs" / "model" / "mnist.yaml")
+    # _ = hydra.utils.instantiate(cfg)
+    module = BOModule(env=AntRandomEnvClass)
+    module.evaluation()
 
 
 
