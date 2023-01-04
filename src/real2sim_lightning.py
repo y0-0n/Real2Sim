@@ -11,13 +11,14 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 import logging
 import numpy as np
+from pytorch_lightning import Callback, LightningDataModule, LightningModule, Trainer
 
 # logger = logging.getLogger(__name__)
 # logger.setLevel(logging.INFO)
 
 logging.basicConfig(level=logging.INFO)
 
-def train() -> None:#Tuple[dict, dict]:
+def train(cfg: DictConfig) -> None:#Tuple[dict, dict]:
     ######################################
     # state estimation model (simulator parameter update)
     ######################################
@@ -26,6 +27,7 @@ def train() -> None:#Tuple[dict, dict]:
     ######################################
     # real-world trajectory (online / offline)
     ######################################
+    datamodule = hydra.utils.instantiate(cfg.datamodule)
 
     ######################################
     # train
@@ -37,9 +39,10 @@ def train() -> None:#Tuple[dict, dict]:
 
     logging.info('Finish')
 
-def main() -> None:
+@hydra.main(version_base=None, config_path=root / "configs", config_name="real2sim")
+def main(cfg : DictConfig) -> None:
     # print(OmegaConf.to_yaml(cfg))
-    train()
+    train(cfg)
 
 if __name__ == "__main__":
     main()
