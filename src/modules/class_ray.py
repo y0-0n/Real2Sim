@@ -7,23 +7,33 @@ from modules.class_grp import scaleup_traj, get_anchors_from_traj
 class RayRolloutWorkerClass:
     def __init__(self, env, leg_idx, rand_mass, device=None, worker_id=1):
         #  Set seed
-        np.random.seed(worker_id)
-        torch.manual_seed(worker_id)
+        seed = max(worker_id, 0)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
         if leg_idx != '-1':
-                self.env = env(ctrl_coef=0.000, body_coef=0.000, vel_coef=0e-5, head_coef=0e-4, render_mode=None, VERBOSE=False)
+                self.env = env(leg_idx=leg_idx, ctrl_coef=0.000, body_coef=0.000, vel_coef=0e-5, head_coef=0e-4, render_mode=None, VERBOSE=False)
         else:
             try:
-                self.env = env(rand_mass=rand_mass, rand_fric=None, render_mode=None, VERBOSE=False)
+                self.env = env(xml_path='xml/snapbot_4/robot_4_1245_{}.xml'.format(worker_id), rand_mass=rand_mass, rand_fric=None, render_mode=None, VERBOSE=False)
             except:
-                self.env = env(ctrl_coef=0.000, body_coef=0.000, vel_coef=0e-5, head_coef=0e-4, render_mode=None, VERBOSE=False)
+                if worker_id != -1:
+                    self.env = env(xml_path='xml/snapbot_4/robot_4_1245_{}.xml'.format(worker_id), ctrl_coef=0.000, body_coef=0.000, vel_coef=0e-5, head_coef=0e-4, render_mode=None, VERBOSE=False)
+                else:
+                    self.env = env(xml_path='xml/snapbot_4/robot_4_1245_heavy.xml', ctrl_coef=0.000, body_coef=0.000, vel_coef=0e-5, head_coef=0e-4, render_mode=None, VERBOSE=False)
         if rand_mass is not None:
             try: 
                 self.env.set_leg_weight(2)
             except:
                 self.env.set_box_weight(2)
         self.device = device
+        self.worker_id = worker_id
         setattr(self.env, "condition", None)
         print("worker_{} ready.".format(worker_id))
+    
+    def change_parameter(self,
+                        mass):
+        self.env.set_torso_mass(mass, self.worker_id)
+        # print('change simulator parameter')
 
     def generate_trajectory(self, DLPG, lbtw, dur_sec, hyp_prior, hyp_posterior, GRPPrior, GRPPosterior, ss_x_min, ss_x_max, ss_margin, prior_prob, start_epoch, n_anchor, t_anchor, traj_secs):
         exploration_coin = np.random.rand()

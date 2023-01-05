@@ -13,6 +13,7 @@ class AgentTrajectoryUpdateClass():
     def __init__(self,
                 name = "CVAE Trajectory",
                 env  = None,
+                workers = None,
                 leg_idx = 12345,
                 env_ray = None,
                 k_p  = 0.2,
@@ -42,6 +43,7 @@ class AgentTrajectoryUpdateClass():
         # Init params
         self.name       = name
         self.env        = env
+        self.workers    = workers
         self.leg_idx    = leg_idx
         self.env_ray    = env_ray
         self.z_dim      = z_dim
@@ -86,17 +88,9 @@ class AgentTrajectoryUpdateClass():
                 n_sim_prev_consider = 10,
                 n_sim_prev_best_q   = 50,
                 init_prior_prob = 0.5,
-                folder = 0
+                folder = 0,
+                loop_idx = 0
                 ):
-        # Set random seed 
-        np.random.seed(seed)
-        torch.manual_seed(seed)
-        torch.cuda.manual_seed(seed)
-
-        # Set wandb 
-        if self.WANDB:
-            wandb.init(project="real2sim", entity="l5vd5", name=str(folder)+"-"+self.name+"-"+str(seed))
-            wandb.config.update(self.args)
 
         # Set buffer
         sim_x_list  = np.zeros((n_sim_roll, self.env.adim*self.n_anchor))
@@ -114,9 +108,8 @@ class AgentTrajectoryUpdateClass():
 
         # Ray
         if self.RAY:
-            ray.init(num_cpus=n_worker)
-            n_worker     = n_worker
-            self.workers = [RayRolloutWorkerClass.remote(env=self.env_ray, leg_idx=self.leg_idx, rand_mass=self.env.rand_mass, device=torch.device('cpu'), worker_id=i) for i in range(int(n_worker))]
+            # n_worker     = n_worker
+            # self.workers = [RayRolloutWorkerClass.remote(env=self.env_ray, leg_idx=self.leg_idx, rand_mass=self.env.rand_mass, device=torch.device('cpu'), worker_id=i) for i in range(int(n_worker))]
             # GRP parameter
             self.GRPPrior.set_prior(n_data_prior=4, dim=self.env.adim, dur_sec=self.dur_sec, HZ=self.env.hz, hyp=self.hyp_prior)
             traj_joints, traj_secs = self.GRPPrior.sample_one_traj(rand_type='Uniform', ORG_PERTURB=True, perturb_gain=0.0) 
@@ -239,9 +232,9 @@ class AgentTrajectoryUpdateClass():
             # Save model weights
             if self.SAVE_WEIGHTS:
                 if (start_epoch+1) % 50 == 0 and start_epoch != 0:
-                    if not os.path.exists("dlpg/{}/{}/weights".format(folder, seed)):
-                        os.makedirs("dlpg/{}/{}/weights".format(folder, seed))
-                    torch.save(self.DLPG.state_dict(), 'dlpg/{}/{}/weights/dlpg_model_weights_{}.pth'.format(folder, seed, start_epoch+1))
+                    if not os.path.exists("real2sim/{}/{}/{}/weights".format(folder, seed, loop_idx)):
+                        os.makedirs("real2sim/{}/{}/{}/weights".format(folder, seed, loop_idx))
+                    torch.save(self.DLPG.state_dict(), 'real2sim/{}/{}/{}/weights/dlpg_model_weights_{}.pth'.format(folder, seed, loop_idx, start_epoch+1))
 
             # For printing evaluation of present policy
             if (start_epoch+1) % 5 == 0 and start_epoch != 0:
@@ -252,11 +245,11 @@ class AgentTrajectoryUpdateClass():
             # Save Agent's trajectories
             if self.SAVE_PLOT:
                 if (start_epoch+1) % 20 == 0 and start_epoch != 0:
-                    if not os.path.exists("dlpg/{}/{}/plot".format(folder, seed)):
-                        os.makedirs("dlpg/{}/{}/plot".format(folder, seed))
+                    if not os.path.exists("real2sim/{}/{}/{}/plot".format(folder, loop_idx, seed)):
+                        os.makedirs("real2sim/{}/{}/{}/plot".format(folder, loop_idx, seed))
                     plot_agent_joint_traj_and_topdown_traj(traj_secs, policy4eval_traj, t_anchor, x_anchor, eval_xy_degs, eval_secs,
                                                     figsize=(16,8), title_str='EPOCH: {:>3} REWARD: {:>6.2f} X_DIFF: {:.2f}'.format(start_epoch+1, eval_reward, eval_x_diff), 
-                                                    tfs=15, SAVE=True, image_name='dlpg/{}/{}/plot/epoch_{}.png'.format(folder, seed, start_epoch+1))
+                                                    tfs=15, SAVE=True, image_name='real2sim/{}/{}/{}/plot/epoch_{}.png'.format(folder, seed, loop_idx, start_epoch+1))
             
                 
             start_epoch += 1
@@ -265,9 +258,9 @@ class AgentTrajectoryUpdateClass():
             eval_reward_np = np.array(eval_reward_list)
             if not os.path.exists("results/{}".format(folder)):
                 os.makedirs("results/{}".format(folder))
-            np.save('results/{}/{}.npy'.format(folder, seed), eval_reward_np)
+            np.save('results/{}/{}/{}.npy'.format(folder, loop_idx, seed), eval_reward_np)
                 
-        ray.shutdown()
+        # ray.shutdown()
 
 if __name__ == "__main__":
     env = AntRandomEnvClass(rand_mass=None, rand_fric=None, render_mode=None)

@@ -30,9 +30,9 @@ def eval_agent_from_network(env, dur_sec, n_anchor, max_repeat, folder, seed, ep
                                                 device_idx = 0
                                                 )
     try:
-        EvalPolicy.DLPG.load_state_dict(torch.load("dlpg/{}/{}/weights/dlpg_model_weights_{}.pth".format(folder, seed, epoch), map_location='cuda:0'))
+        EvalPolicy.DLPG.load_state_dict(torch.load("real2sim/{}/{}/weights/dlpg_model_weights_{}.pth".format(folder, seed, epoch), map_location='cuda:0'))
     except:
-        EvalPolicy.DLPG.load_state_dict(torch.load("dlpg/{}/{}/weights/dlpg_model_weights_{}.pth".format(folder, seed, epoch), map_location='cpu'))
+        EvalPolicy.DLPG.load_state_dict(torch.load("real2sim/{}/{}/weights/dlpg_model_weights_{}.pth".format(folder, seed, epoch), map_location='cpu'))
     EvalPolicy.DLPG.eval()
     EvalPolicy.GRPPrior.set_prior(n_data_prior=4, dim=env.adim, dur_sec=dur_sec, HZ=env.hz, hyp=EvalPolicy.hyp_prior)
     traj_joints, traj_secs = EvalPolicy.GRPPrior.sample_one_traj(rand_type='Uniform', ORG_PERTURB=True, perturb_gain=0.0)
@@ -85,8 +85,8 @@ if  __name__ == "__main__":
     # env.set_leg_weight(2) 
     # env = Snapbot6EnvClass(render_mode=None)
     # env = Snapbot4EnvClass(ctrl_coef=0.000, body_coef=0.000, vel_coef=0e-2, head_coef=0e-4, render_mode=None)
-    env = Snapbot4EnvClass(ctrl_coef=0.000, body_coef=0.000, vel_coef=0e-5, head_coef=0e-4, xml_path='xml/snapbot_4/robot_4_1245_heavy.xml', render_mode=None)
+    env = Snapbot4EnvClass(ctrl_coef=0.000, body_coef=0.000, vel_coef=0e-5, head_coef=0e-4, xml_path='xml/snapbot_4/robot_4_1245_0.xml', render_mode=None)
     # env  = Snapbot6EnvClass(ctrl_coef=0.000, body_coef=0.000, vel_coef=0e-2, head_coef=0e-4, render_mode=None)
-    traj = eval_agent_from_network(env=env, dur_sec=2, n_anchor=20, max_repeat=5, folder="snapbot_33", seed=6, epoch=500,  condition=[0,1,0], RENDER=True, PLOT=False)
+    traj = eval_agent_from_network(env=env, dur_sec=2, n_anchor=20, max_repeat=10, folder="snapbot_33", seed=6, epoch=50,  condition=[0,1,0], RENDER=True, PLOT=False)
     # eval_agent_from_network(env=env, dur_sec=2, n_anchor=20, max_repeat=5, folder="snapbot_5_s_12345_transfer", seed=1, epoch=300,  condition=[0,1,0], RENDER=True, PLOT=True)
     np.save('traj_5_5.npy', traj)

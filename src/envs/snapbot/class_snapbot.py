@@ -574,6 +574,34 @@ class Snapbot4EnvClass(mujoco_env.MujocoEnv, utils.EzPickle):
         
         return self.o, self.r, self.d, self.info
 
+    def set_torso_mass(self, mass, idx):
+        xml_path = os.path.join(os.path.dirname(__file__), 'xml/snapbot_4/snapbot_4_1245_{}.xml'.format(idx))
+        target_xml = open(xml_path, 'rt', encoding='UTF8')
+        tree = ET.parse(target_xml)
+        root = tree.getroot()
+        tag_inertial=root.find('body').find('inertial')
+        tag_inertial.attrib["mass"] = "{}".format(mass)
+        tree.write(xml_path)
+
+        xml_path = os.path.join(os.path.dirname(__file__), 'xml/snapbot_4/robot_4_1245_{}.xml'.format(idx))
+        try:
+            mujoco_env.MujocoEnv.__init__(
+            self,
+            model_path      = xml_path,
+            frame_skip      = self.frame_skip,
+            mujoco_bindings = 'mujoco_py'
+            )
+        except:
+            mujoco_env.MujocoEnv.__init__(
+            self,
+            model_path      = xml_path,
+            frame_skip      = self.frame_skip
+            )
+        utils.EzPickle.__init__(self)
+        # Observation and action dimension
+        self.odim = self.observation_space.shape[0]
+        self.adim = self.action_space.shape[0]
+
     
     def _get_obs(self):
         """
