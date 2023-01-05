@@ -1,0 +1,32 @@
+python src/main_real2sim.py \
+--env 'snapbot_4' \
+--leg_idx -1 \
+--torque 1 \
+--z_dim 32 \
+--c_dim 3 \
+--h_dims 128 128 \
+--var_max -1 \
+--n_anchor 20 \
+--dur_sec 2 \
+--max_repeat 5 \
+--hyp_prior '{"g":"1/1", "l":"1/8", "w":"1e-8"}' \
+--hyp_posterior '{"g": "1/4", "l": "1/8", "w": "1e-8"}' \
+--lbtw_base 0.8 \
+--device_idx -1 \
+--seed 6 \
+--lr_dlpg 0.01 \
+--eps_dlpg 1e-8 \
+--n_worker 100 \
+--start_epoch 0 \
+--max_epoch 300 \
+--n_sim_roll 100 \
+--sim_update_size 64 \
+--n_sim_update 64 \
+--n_sim_prev_consider 10 \
+--n_sim_prev_best_q 50 \
+--init_prior_prob 0.2 \
+--folder 'snapbot_33' \
+--WANDB True \
+--SAVE_WEIGHTS True \
+--SAVE_PLOT False \
+--SAVE_REWARD False
