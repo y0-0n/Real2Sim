@@ -35,7 +35,7 @@ class RayRolloutWorkerClass:
         self.env.set_torso_mass(mass, self.worker_id)
         # print('change simulator parameter')
 
-    def generate_trajectory(self, DLPG, lbtw, dur_sec, hyp_prior, hyp_posterior, GRPPrior, GRPPosterior, ss_x_min, ss_x_max, ss_margin, prior_prob, start_epoch, n_anchor, t_anchor, traj_secs):
+    def generate_trajectory(self, DLPG, lbtw, dur_sec, hyp_prior, hyp_posterior, GRPPrior, GRPPosterior, ss_x_min, ss_x_max, ss_margin, prior_prob, epoch, n_anchor, t_anchor, traj_secs, idx):
         exploration_coin = np.random.rand()
         if self.env.condition is not None:
             condition_coin = np.random.uniform(0, 1)
@@ -47,7 +47,7 @@ class RayRolloutWorkerClass:
                 c = np.array([0,0,1])
         else:
             c = np.array([0,1,0])
-        if (exploration_coin < prior_prob) or (start_epoch < 1):
+        if ((exploration_coin < prior_prob) or (epoch < 1)) and idx == 0:
             GRPPrior.set_prior(n_data_prior=4, dim=self.env.adim, dur_sec=dur_sec, HZ=self.env.hz, hyp=hyp_prior)
             traj_joints, traj_secs = GRPPrior.sample_one_traj(rand_type='Uniform', ORG_PERTURB=True, perturb_gain=0.0, ss_x_min=ss_x_min, ss_x_max=ss_x_max, ss_margin=ss_margin) 
             traj_joints_deg = scaleup_traj(self.env, traj_joints, DO_SQUASH=True, squash_margin=5)
@@ -61,7 +61,7 @@ class RayRolloutWorkerClass:
         t_anchor, x_anchor = get_anchors_from_traj(traj_secs, traj_joints, n_anchor=n_anchor) 
         return {'x_anchor':x_anchor, 'c': c, 'traj_joints_deg': traj_joints_deg}
 
-    def generate_trajectory_transfer(self, DLPG, model, lbtw, dur_sec, hyp_prior, hyp_posterior, GRPPrior, GRPPosterior, ss_x_min, ss_x_max, ss_margin, prior_prob, start_epoch, n_anchor, t_anchor, traj_secs):
+    def generate_trajectory_transfer(self, DLPG, model, lbtw, dur_sec, hyp_prior, hyp_posterior, GRPPrior, GRPPosterior, ss_x_min, ss_x_max, ss_margin, prior_prob, epoch, n_anchor, t_anchor, traj_secs):
         exploration_coin = np.random.rand()
         if self.env.condition is not None:
             condition_coin = np.random.uniform(0, 1)
@@ -73,7 +73,7 @@ class RayRolloutWorkerClass:
                 c = np.array([0,0,1])
         else:
             c = np.array([0,1,0])
-        if (exploration_coin < prior_prob) or (start_epoch < 1):
+        if (exploration_coin < prior_prob) or (epoch < 1):
             GRPPrior.set_learned_prior(model=model, src_dim=self.env.adim, dur_sec=dur_sec, HZ=self.env.hz, hyp=hyp_prior)
             traj_joints, traj_secs = GRPPrior.sample_one_traj(rand_type='Uniform', ORG_PERTURB=True, perturb_gain=0.0, ss_x_min=ss_x_min, ss_x_max=ss_x_max, ss_margin=ss_margin) 
             traj_joints_deg = scaleup_traj(self.env, traj_joints, DO_SQUASH=True, squash_margin=5)

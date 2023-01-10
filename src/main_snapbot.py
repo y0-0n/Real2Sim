@@ -56,7 +56,7 @@ def main(args:argparse.Namespace):
                         lr_dlpg     = args.lr_dlpg,
                         eps_dlpg    = args.eps_dlpg,
                         n_worker    = args.n_worker,                        
-                        start_epoch = args.start_epoch,
+                        epoch = args.epoch,
                         max_epoch   = args.max_epoch,
                         n_sim_roll          = args.n_sim_roll,
                         sim_update_size     = args.sim_update_size,
@@ -100,7 +100,7 @@ if __name__ == "__main__":
     parser.add_argument("--lr_dlpg", default=0.001, type=float)
     parser.add_argument("--eps_dlpg", default=1e-8, type=float)
     parser.add_argument("--n_worker", default=50, type=int)
-    parser.add_argument("--start_epoch", default=0, type=int)
+    parser.add_argument("--epoch", default=0, type=int)
     parser.add_argument("--max_epoch", default=300, type=int)
     parser.add_argument("--n_sim_roll", default=100, type=int)
     parser.add_argument("--sim_update_size", default=64, type=int)

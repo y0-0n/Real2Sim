@@ -26,7 +26,7 @@ def main(args:argparse.Namespace):
         args.hyp_prior[k] = convert_to_float(v)
     for k, v in args.hyp_posterior.items():
         args.hyp_posterior[k] = convert_to_float(v)
-    # Set random seed 
+    # Set random seed
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed(args.seed)
@@ -43,6 +43,7 @@ def main(args:argparse.Namespace):
                                             name = "CVAE Trajectory",
                                             env  = env,
                                             workers = workers,
+                                            target_env = target_env,
                                             leg_idx = args.leg_idx,
                                             env_ray = env_ray,
                                             k_p  = env.k_p,
@@ -75,15 +76,15 @@ def main(args:argparse.Namespace):
                         # env=env,
                         # env_ray=env_ray,
                         n_worker=args.n_worker,
-                        workers = workers,
+                        workers=workers,
+                        seed=args.seed
                         # target_env=target_env,
                     )
     # initial mass
     init_mass = bayesian_optim.x_sampler(1)[0][0][0]
-    
 
-    for loop_idx in range(args.n_loop):
-        if loop_idx == 0:
+    for idx in range(args.n_loop):
+        if idx == 0:
             [worker.change_parameter.remote(mass=init_mass) for worker in workers]
         else:
             [worker.change_parameter.remote(mass=x_sol[0][0]) for worker in workers]
@@ -91,8 +92,8 @@ def main(args:argparse.Namespace):
                             seed = args.seed,
                             lr_dlpg     = args.lr_dlpg,
                             eps_dlpg    = args.eps_dlpg,
-                            n_worker    = args.n_worker,                        
-                            start_epoch = args.start_epoch,
+                            n_worker    = args.n_worker,
+                            epoch = args.epoch,
                             max_epoch   = args.max_epoch,
                             n_sim_roll          = args.n_sim_roll,
                             sim_update_size     = args.sim_update_size,
@@ -101,10 +102,10 @@ def main(args:argparse.Namespace):
                             n_sim_prev_best_q   = args.n_sim_prev_best_q,
                             init_prior_prob = args.init_prior_prob,
                             folder = args.folder,
-                            loop_idx = loop_idx
+                            idx = idx
                             )
-        x_sol, y_sol = bayesian_optim.optim()
-        print("reward gap : {}".format(y_sol))
+        x_sol, y_sol = bayesian_optim.optim(idx= idx)
+        print("loss : {}".format(y_sol))
         print("current mass : {}".format(x_sol))
         print("target mass : {}".format(2.243375116892044))
         
@@ -143,7 +144,7 @@ if __name__ == "__main__":
     parser.add_argument("--lr_dlpg", default=0.001, type=float)
     parser.add_argument("--eps_dlpg", default=1e-8, type=float)
     parser.add_argument("--n_worker", default=50, type=int)
-    parser.add_argument("--start_epoch", default=0, type=int)
+    parser.add_argument("--epoch", default=0, type=int)
     parser.add_argument("--max_epoch", default=300, type=int)
     parser.add_argument("--n_sim_roll", default=100, type=int)
     parser.add_argument("--sim_update_size", default=64, type=int)

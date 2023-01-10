@@ -18,8 +18,10 @@ class BayesianOptimizationClass(object):
                 n_bo=3,
                 n_cd=0,
                 n_worker=50,
-                n_sample_max=1000
+                n_sample_max=1000,
+                seed=0
                 ) -> None:
+        np.random.seed(seed)
         self.x_minmax = x_minmax
         # self.n_sample = n_sample
         self.n_random = n_random
@@ -56,21 +58,15 @@ class BayesianOptimizationClass(object):
         # target_result_rollout_tile = np.tile(target_result_rollout, (len(sample_result_rollout),1)).shape
         sample_x_diff = []
         for result in sample_result_rollout:
-            sample_x_diff.append(result['x_diff'])
+            sample_x_diff.append(result['xy_degs'])
             # print(result['x_diff'])
         # print(target_result_rollout['x_diff'])
-        sample_x_diff = np.array(sample_x_diff)
-        target_x_diff = np.tile(target_result_rollout['x_diff'], len(sample_result_rollout))
-        loss = np.sqrt([[(sample_x_diff-target_x_diff)**2]]).reshape(-1, 1, 1)
+        sample_x_diff = np.array(sample_x_diff) # (N_batch, Timestep, 3)
+        target_x_diff = np.tile(target_result_rollout['xy_degs'], (len(sample_result_rollout),1,1)) # 
+        loss = np.mean(np.mean(np.sqrt((sample_x_diff-target_x_diff)**2), axis=2, keepdims=True), axis=1, keepdims=True)#.reshape(-1, 1, 1)
         return loss
-    def get_best_xy(self,x_data,y_data):
-        """
-        Get the current best solution
-        """
-        min_idx = np.argmin(y_data)
-        return x_data[min_idx,:].reshape((1,-1)),y_data[min_idx,:].reshape((1,-1))
 
-    def optim(self):
+    def optim(self, idx):
         x_evals = self.x_sampler(self.n_worker) # mass candidate
 
         # GRP parameter
@@ -88,7 +84,7 @@ class BayesianOptimizationClass(object):
 
         # Generate one trajectory (for target env, real-world)
         generate_trajectory = self.workers[0].generate_trajectory.remote(DLPG=self.policy.DLPG, lbtw=1.0, dur_sec=self.policy.dur_sec, hyp_prior=self.policy.hyp_prior, hyp_posterior=self.policy.hyp_posterior, GRPPrior=self.policy.GRPPrior, GRPPosterior=self.policy.GRPPosterior, \
-                                                                    ss_x_min=ss_x_min, ss_x_max=ss_x_max, ss_margin=ss_margin, prior_prob=0., start_epoch=1, n_anchor=self.policy.n_anchor, t_anchor=t_anchor, traj_secs=traj_secs)
+                                                                    ss_x_min=ss_x_min, ss_x_max=ss_x_max, ss_margin=ss_margin, prior_prob=0., epoch=1, n_anchor=self.policy.n_anchor, t_anchor=t_anchor, traj_secs=traj_secs, idx=idx)
         result_trajectory = ray.get(generate_trajectory)
         workers_with_target = self.workers + [self.target_workers]
         rollout_ray = [worker.rollout.remote(self.policy.PID, result_trajectory['traj_joints_deg'], n_traj_repeat=self.policy.max_repeat, RENDER=False) for i, worker in enumerate(workers_with_target)]
@@ -105,7 +101,7 @@ class BayesianOptimizationClass(object):
 
                 # Generate one trajectory (for target env, real-world)
                 generate_trajectory = self.workers[0].generate_trajectory.remote(DLPG=self.policy.DLPG, lbtw=1.0, dur_sec=self.policy.dur_sec, hyp_prior=self.policy.hyp_prior, hyp_posterior=self.policy.hyp_posterior, GRPPrior=self.policy.GRPPrior, GRPPosterior=self.policy.GRPPosterior, \
-                                                                            ss_x_min=ss_x_min, ss_x_max=ss_x_max, ss_margin=ss_margin, prior_prob=0., start_epoch=1, n_anchor=self.policy.n_anchor, t_anchor=t_anchor, traj_secs=traj_secs)
+                                                                            ss_x_min=ss_x_min, ss_x_max=ss_x_max, ss_margin=ss_margin, prior_prob=0., epoch=1, n_anchor=self.policy.n_anchor, t_anchor=t_anchor, traj_secs=traj_secs, idx=idx)
                 result_trajectory = ray.get(generate_trajectory)
                 workers_with_target = self.workers + [self.target_workers]
                 rollout_ray = [worker.rollout.remote(self.policy.PID, result_trajectory['traj_joints_deg'], n_traj_repeat=self.policy.max_repeat, RENDER=False) for i, worker in enumerate(workers_with_target)]
@@ -136,7 +132,7 @@ class BayesianOptimizationClass(object):
 
                 # Generate one trajectory (for target env, real-world)
                 generate_trajectory = self.workers[0].generate_trajectory.remote(DLPG=self.policy.DLPG, lbtw=1.0, dur_sec=self.policy.dur_sec, hyp_prior=self.policy.hyp_prior, hyp_posterior=self.policy.hyp_posterior, GRPPrior=self.policy.GRPPrior, GRPPosterior=self.policy.GRPPosterior, \
-                                                                            ss_x_min=ss_x_min, ss_x_max=ss_x_max, ss_margin=ss_margin, prior_prob=0., start_epoch=1, n_anchor=self.policy.n_anchor, t_anchor=t_anchor, traj_secs=traj_secs)
+                                                                            ss_x_min=ss_x_min, ss_x_max=ss_x_max, ss_margin=ss_margin, prior_prob=0., epoch=1, n_anchor=self.policy.n_anchor, t_anchor=t_anchor, traj_secs=traj_secs, idx=idx)
                 result_trajectory = ray.get(generate_trajectory)
                 workers_with_target = self.workers + [self.target_workers]
                 rollout_ray = [worker.rollout.remote(self.policy.PID, result_trajectory['traj_joints_deg'], n_traj_repeat=self.policy.max_repeat, RENDER=False) for i, worker in enumerate(workers_with_target)]
